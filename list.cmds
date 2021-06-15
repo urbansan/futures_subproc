@@ -1,0 +1,4 @@
+python3 immuner.py 4&& echo 4
+python3 immuner.py 3&& echo 3
+python3 immuner.py 2&& echo 2
+python3 immuner.py 1&& echo 1
