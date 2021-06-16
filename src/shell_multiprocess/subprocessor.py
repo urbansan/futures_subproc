@@ -1,18 +1,12 @@
 import os
 import subprocess
-import sys
 import signal
 import psutil
 
-import threading
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
-from pathlib import Path
-
-workers = int(sys.argv[1])
-file = Path(sys.argv[2])
 
 
-class Subprocessor:
+class SubProcessor:
     def __init__(self, commands, worker_count):
         self._processes = []
         self.commands = commands
