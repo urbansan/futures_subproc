@@ -2,6 +2,7 @@ import os
 import subprocess
 import signal
 import psutil
+from functools import reduce
 
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 
@@ -9,6 +10,7 @@ from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 class SubProcessor:
     def __init__(self, commands, worker_count):
         self._processes = []
+        self._futures = []
         self.commands = commands
         self.worker_count = worker_count
 
@@ -29,16 +31,18 @@ class SubProcessor:
 
     def run(self):
         with ThreadPoolExecutor(
-            workers, thread_name_prefix=type(self).__name__
+            self.worker_count, thread_name_prefix=type(self).__name__
         ) as pool:
             # with file.open("r") as f:
-            futures = [pool.submit(self._task, cmd=cmd) for cmd in self.commands]
-            try:
-                for future in as_completed(futures):
-                    future.result()
-            except KeyboardInterrupt:
-                for future in futures:
-                    print(future.cancel())
-                for process in self._processes:
-                    self._kill_child_processes(process.pid)
-                    process.kill()
+            self._futures = [pool.submit(self._task, cmd=cmd) for cmd in self.commands]
+            for future in as_completed(self._futures):
+                future.result()
+
+        return 1 if any(p.returncode for p in self._processes) else 0
+
+    def abort(self):
+        for future in self._futures:
+            print(future.cancel())
+        for process in self._processes:
+            self._kill_child_processes(process.pid)
+            process.kill()

@@ -1,3 +1,4 @@
+import sys
 import argparse
 from pathlib import Path
 from .subprocessor import SubProcessor
@@ -41,7 +42,7 @@ class Launcher:
 
     @staticmethod
     def _get_commands(filepath: Path):
-        with filepath.open('r') as f:
+        with filepath.open("r") as f:
             cmds = f.readlines()
         return cmds
 
@@ -50,4 +51,10 @@ class Launcher:
 
         cmds = self._get_commands(args.filename)
         processor = SubProcessor(cmds, args.processes)
-        processor.run()
+        try:
+            returncode = processor.run()
+        except KeyboardInterrupt as err:
+            processor.abort()
+            print("Cancelled on user request", file=sys.stderr)
+            returncode = -1
+        exit(returncode)
