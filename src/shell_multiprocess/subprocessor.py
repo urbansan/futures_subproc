@@ -4,7 +4,7 @@ import signal
 import psutil
 from functools import reduce
 
-from concurrent.futures import Future, ThreadPoolExecutor, as_completed
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed, CancelledError
 
 
 class SubProcessor:
@@ -33,11 +33,17 @@ class SubProcessor:
         with ThreadPoolExecutor(
             self.worker_count, thread_name_prefix=type(self).__name__
         ) as pool:
-            # with file.open("r") as f:
             self._futures = [pool.submit(self._task, cmd=cmd) for cmd in self.commands]
             for future in as_completed(self._futures):
-                future.result()
+                try:
+                    future.result()
+                except CancelledError:
+                    pass
+ 
+        return self.returncode
 
+    @property
+    def returncode(self):
         return 1 if any(p.returncode for p in self._processes) else 0
 
     def abort(self):
@@ -45,4 +51,4 @@ class SubProcessor:
             print(future.cancel())
         for process in self._processes:
             self._kill_child_processes(process.pid)
-            process.kill()
+            # process.kill()

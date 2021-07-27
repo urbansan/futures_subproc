@@ -47,13 +47,20 @@ def test_run_shell_syntax():
     assert 8 == len(processor._processes)
     assert 1 == returncode
 
-
+import threading
 def test_cancel():
     cmds = [
-        "sleep 1",
+        "sleep 99",
+        "sleep 99",
+        "sleep 99",
+        "sleep 99",
+        "sleep 99",
+        "sleep 99",
     ]
     processor = SubProcessor(cmds, 4)
-
-    returncode = processor.run()
-    assert 1 == len(processor._processes)
-    assert 0 != returncode
+    th = threading.Thread(target=processor.run)
+    th.start()
+    processor.abort()
+    # th.join()
+    # assert 1 == len(processor._processes)
+    assert 0 != processor.returncode
