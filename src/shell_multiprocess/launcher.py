@@ -1,18 +1,22 @@
-import sys
 import argparse
 from pathlib import Path
-from .subprocessor import SubProcessor
 
 
 class Launcher:
     def __init__(self):
         self.parser = self._get_parser()
 
+    def get_cmds_and_proc_count(self):
+        args = self.parser.parse_args()
+        with args.filename.open("r") as f:
+            cmds = f.readlines()
+        return cmds, args.processes
+
     def _get_parser(self):
         parser = argparse.ArgumentParser()
 
         parser.add_argument(
-            "filename", type=self._file_exists, help="Filename with commands"
+            "filename", type=self._existing_filepath, help="Filename with commands"
         )
         parser.add_argument(
             "processes",
@@ -27,11 +31,12 @@ class Launcher:
             return int(processes)
         except ValueError as er:
             raise argparse.ArgumentTypeError(
-                f"Invalid process value '{processes!s}'. Please provide an integer for amount of workers to be used."
+                f"Invalid process count value '{processes!s}'."
+                f" Please provide an integer for amount of workers to be used."
             )
 
     @staticmethod
-    def _file_exists(filename: str):
+    def _existing_filepath(filename: str) -> Path:
         filepath = Path(filename)
         if not filepath.exists():
             raise argparse.ArgumentTypeError(
@@ -39,22 +44,3 @@ class Launcher:
             )
         else:
             return filepath
-
-    @staticmethod
-    def _get_commands(filepath: Path):
-        with filepath.open("r") as f:
-            cmds = f.readlines()
-        return cmds
-
-    def run(self, args=None):
-        args = self.parser.parse_args(args)
-
-        cmds = self._get_commands(args.filename)
-        processor = SubProcessor(cmds, args.processes)
-        try:
-            returncode = processor.run()
-        except KeyboardInterrupt as err:
-            processor.abort()
-            print("Cancelled on user request", file=sys.stderr)
-            returncode = -1
-        exit(returncode)

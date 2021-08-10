@@ -1,11 +1,10 @@
 from shell_multiprocess.launcher import Launcher
 import pytest
-from pathlib import Path
 
 
-def test_file_exists():
-    args = Launcher().parser.parse_args(["tests/files/tasks.list", "4"])
-    expected_path = Path(__file__).parent / "files" / "tasks.list"
+def test_file_exists(files_path):
+    args = Launcher().parser.parse_args(["files/tasks.list", "4"])
+    expected_path = files_path / "tasks.list"
     assert expected_path.absolute() == args.filename.absolute()
     assert 4 == args.processes
 
