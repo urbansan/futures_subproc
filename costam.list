@@ -1,0 +1,5 @@
+immuner 30 && immuner 30 && echo 1
+immuner 30 && immuner 30 && echo 2
+immuner 30 && echo 3
+immuner 30 && echo 4
+immuner 30 && echo 5

@@ -11,8 +11,8 @@ setuptools.setup(
     ],
     entry_points={
         'console_scripts': [
-            'multiprocess = shell_multiprocess.scripts.multiprocess.py',
-            'immuner = shell_multiprocess.scripts.multiprocess.py',
+            'multiprocess = shell_multiprocess.main:main',
+            'immuner = shell_multiprocess.scripts.immuner:start',
         ]
     }
 )

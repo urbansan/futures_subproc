@@ -12,7 +12,7 @@ class CleanupAsyncProcessor:
     """Cleanup class for AsyncProcessor if there would be any processes
     which would be troublesome to kill. Currently the KeyInterruptError
     cancels and kills all shell processes but that might be too optimistic
-    and a forced cleanup will be required
+    when a process is KeyInterruptError-proof and requires a forced cleanup.
 
     The event loop cannot be stopped before running cleanup.
 
@@ -39,7 +39,7 @@ class CleanupAsyncProcessor:
         self.loop = loop
 
     async def start(self):
-        print("starting cleanup", file=sys.stderr)
+        # print("starting cleanup", file=sys.stderr)
         self._cancel_pending()
         await self._cleanup_children()
         await self._cleanup_parents()
@@ -52,10 +52,10 @@ class CleanupAsyncProcessor:
     def _cancel_pending(self):
         for future in self.processor.pending:
             future.cancel()
-            print(
-                *[f"{p.pid}-{p.returncode}" for p in self.processor.process_pool],
-                file=sys.stderr,
-            )
+            # print(
+            #     *[f"{p.pid}-{p.returncode}" for p in self.processor.process_pool],
+            #     file=sys.stderr,
+            # )
 
     async def _cleanup_children(self):
         child_proc_tasks = set()
@@ -72,16 +72,17 @@ class CleanupAsyncProcessor:
             try:
                 process_obj.kill()
             except ProcessLookupError:
-                print(process_obj, "already killed", file=sys.stderr)
-            else:
-                print(f"killing pid {process_obj.pid}", file=sys.stderr)
+                pass
+                # print(process_obj, "already killed", file=sys.stderr)
+            # else:
+                # print(f"killing pid {process_obj.pid}", file=sys.stderr)
         finished, pending = await asyncio.wait(
             [p.wait() for p in self.processor.process_pool]
         )
 
     @staticmethod
     def _kill_child_processes(parent_pid):
-        print(f"trying killing kid for parent {parent_pid}", file=sys.stderr)
+        # print(f"trying killing kid for parent {parent_pid}", file=sys.stderr)
         try:
             parent = psutil.Process(parent_pid)
         except psutil.NoSuchProcess:
@@ -92,5 +93,5 @@ class CleanupAsyncProcessor:
             pass
         else:
             for process in child_processes:
-                print("killing process pid", process.pid, file=sys.stderr)
+                # print("killing child pid", process.pid, file=sys.stderr)
                 process.kill()

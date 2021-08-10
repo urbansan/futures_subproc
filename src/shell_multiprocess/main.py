@@ -1,5 +1,7 @@
+import sys
 import asyncio
 from .async_processor import AsyncProcessor
+from .cleanup import CleanupAsyncProcessor
 from .launcher import Launcher
 
 
@@ -12,7 +14,9 @@ def main():
         loop.run_until_complete(processor.start(cmds))
     except KeyboardInterrupt:
         processor.stop()
-        print(*[f"{p.pid}:{p.returncode}" for p in processor.process_pool])
+        print("multiprocess: cleaning up started processes...", file=sys.stderr)
+        cleanup = CleanupAsyncProcessor(processor, loop)
+        loop.run_until_complete(cleanup.start())
     finally:
         loop.close()
         exit(processor.returncode)
