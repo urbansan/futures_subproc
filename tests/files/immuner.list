@@ -1,0 +1,2 @@
+python3 scripts/immuner.py 1 && python3 scripts/immuner.py 1 && echo finished_1
+python3 scripts/immuner.py 2 && echo finished_2

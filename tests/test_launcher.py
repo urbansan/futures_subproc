@@ -1,19 +1,28 @@
-from shell_multiprocess.launcher import Launcher
+from shell_multiprocess import parser
 import pytest
 
 
 def test_file_exists(files_path):
-    args = Launcher().parser.parse_args(["files/tasks.list", "4"])
+    args = parser.get_args(["files/tasks.list", "4"])
     expected_path = files_path / "tasks.list"
     assert expected_path.absolute() == args.filename.absolute()
     assert 4 == args.processes
+    assert False is args.soft_kill
 
 
 def test_file_does_not_exist():
     with pytest.raises(SystemExit):
-        Launcher().parser.parse_args(["does_not_exist", "4"])
+        parser.get_args(["does_not_exist", "4"])
 
 
 def test_workers_not_int():
     with pytest.raises(SystemExit):
-        args = Launcher().parser.parse_args(["tests/files/tasks.list", "zzz"])
+        parser.get_args(["tests/files/tasks.list", "zzz"])
+
+
+def test_soft_kill(files_path):
+    args = parser.get_args(["files/tasks.list", "4", "-s"])
+    expected_path = files_path / "tasks.list"
+    assert expected_path.absolute() == args.filename.absolute()
+    assert 4 == args.processes
+    assert True is args.soft_kill

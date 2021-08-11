@@ -1,0 +1,71 @@
+import subprocess
+import threading
+import time
+import psutil
+import signal
+from typing import List
+
+
+def _get_child_processes(parent_pid, recursive=False) -> List[psutil.Process]:
+    try:
+        parent = psutil.Process(parent_pid)
+    except psutil.NoSuchProcess:
+        return []
+    try:
+        child_processes = parent.children(recursive=recursive)
+    except psutil.NoSuchProcess:
+        pass
+    else:
+        return [process for process in child_processes]
+
+
+def _get_live_processes(pids):
+    existing_processes = []
+    for pid in pids:
+        try:
+            p = psutil.Process(pid)
+        except psutil.NoSuchProcess:
+            pass
+        else:
+            # print(p.cmdline())
+            existing_processes.append(p)
+    return existing_processes
+
+
+def interrupt(popen: subprocess.Popen, alive_processes_cmds: list):
+    time.sleep(0.5)
+    all_pids = [p.pid for p in _get_child_processes(popen.pid, True)]
+    processes = _get_child_processes(popen.pid)
+    for proc in processes:
+        proc.send_signal(signal.SIGINT)
+    time.sleep(0.5)
+    cmds = [" ".join(p.cmdline()) for p in _get_live_processes(all_pids)]
+    # print(cmds)
+    alive_processes_cmds += cmds
+
+
+def run_processes(cmd):
+    popen = subprocess.Popen(cmd, shell=True)
+    alive_processes_cmds = []
+    th = threading.Thread(target=interrupt, args=(popen, alive_processes_cmds))
+    th.start()
+    popen.communicate()
+
+    th.join()
+    return alive_processes_cmds, popen.returncode
+
+
+def test_soft_kill():
+    cmd = ("multiprocess files/immuner.list 2 --soft-kill",)
+    alive_processes_cmds, returncode = run_processes(cmd)
+    assert returncode != 0
+    assert (
+        all(["immuner.py" in c for c in alive_processes_cmds]) and alive_processes_cmds
+    )
+
+
+def test_hard_kill():
+    cmd = ("multiprocess files/immuner.list 2",)
+    alive_processes_cmds, returncode = run_processes(cmd)
+    assert returncode != 0
+    assert not alive_processes_cmds

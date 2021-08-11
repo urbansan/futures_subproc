@@ -31,18 +31,24 @@ class CleanupAsyncProcessor:
         exit(processor.returncode)
     """
 
-    def __init__(self, processor: "AsyncProcessor", loop: asyncio.AbstractEventLoop):
+    def __init__(
+        self,
+        processor: "AsyncProcessor",
+        loop: asyncio.AbstractEventLoop,
+        kill_signal: int,
+    ):
         self.processor = processor
         if not self.processor.stopped:
             print("Processor was not stopped. Force stopping", file=sys.stderr)
             self.processor.stop()
         self.loop = loop
+        self.kill_signal = kill_signal
 
     async def start(self):
         # print("starting cleanup", file=sys.stderr)
         self._cancel_pending()
-        await self._cleanup_children()
-        await self._cleanup_parents()
+        await self._cleanup_commands()
+        await self._cleanup_shells()
 
     def _get_executor(self):
         return concurrent.futures.ThreadPoolExecutor(
@@ -52,46 +58,40 @@ class CleanupAsyncProcessor:
     def _cancel_pending(self):
         for future in self.processor.pending:
             future.cancel()
-            # print(
-            #     *[f"{p.pid}-{p.returncode}" for p in self.processor.process_pool],
-            #     file=sys.stderr,
-            # )
 
-    async def _cleanup_children(self):
+    async def _cleanup_commands(self):
         child_proc_tasks = set()
         executor = self._get_executor()
         for process_obj in self.processor.process_pool:
             task = self.loop.run_in_executor(
-                executor, self._kill_child_processes, process_obj.pid
+                executor,
+                self._kill_child_processes,
+                process_obj.pid,
+                self.kill_signal,
             )
             child_proc_tasks.add(task)
         await asyncio.wait(child_proc_tasks)
 
-    async def _cleanup_parents(self):
+    async def _cleanup_shells(self):
         for process_obj in self.processor.process_pool:
             try:
                 process_obj.kill()
             except ProcessLookupError:
                 pass
-                # print(process_obj, "already killed", file=sys.stderr)
-            # else:
-                # print(f"killing pid {process_obj.pid}", file=sys.stderr)
         finished, pending = await asyncio.wait(
             [p.wait() for p in self.processor.process_pool]
         )
 
     @staticmethod
-    def _kill_child_processes(parent_pid):
-        # print(f"trying killing kid for parent {parent_pid}", file=sys.stderr)
+    def _kill_child_processes(parent_pid: int, kill_signal: int):
         try:
             parent = psutil.Process(parent_pid)
         except psutil.NoSuchProcess:
             return
         try:
-            child_processes = parent.children(recursive=True)
+            child_processes = parent.children(recursive=False)
         except psutil.NoSuchProcess:
             pass
         else:
             for process in child_processes:
-                # print("killing child pid", process.pid, file=sys.stderr)
-                process.kill()
+                process.send_signal(kill_signal)
