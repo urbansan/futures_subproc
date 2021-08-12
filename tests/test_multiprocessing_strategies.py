@@ -14,9 +14,9 @@ async def test_runs_echos():
         "echo 7",
         "echo 8",
     ]
-    processor = AsyncProcessor(4)
+    processor = AsyncProcessor(4, cmds)
 
-    await processor.start(cmds)
+    await processor.start()
     assert 8 == len(processor.process_pool)
     assert 0 == processor.returncode
 
@@ -26,9 +26,9 @@ async def test_run_false():
     cmds = [
         "false",
     ]
-    processor = AsyncProcessor(4)
+    processor = AsyncProcessor(4, cmds)
 
-    await processor.start(cmds)
+    await processor.start()
     assert 1 == len(processor.process_pool)
     assert 0 != processor.returncode
 
@@ -45,8 +45,8 @@ async def test_run_shell_syntax():
         "echo 7 && false",
         "echo 8 || true",
     ]
-    processor = AsyncProcessor(4)
+    processor = AsyncProcessor(4, cmds)
 
-    await processor.start(cmds)
+    await processor.start()
     assert 8 == len(processor.process_pool)
     assert 1 == processor.returncode

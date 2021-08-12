@@ -9,9 +9,10 @@ def main():
     args = interpreter.get_args()
 
     loop = asyncio.get_event_loop()
-    processor = AsyncProcessor(args.process_count)
+    processor = AsyncProcessor(args.process_count, args.shell_commands)
     try:
-        loop.run_until_complete(processor.start(args.shell_commands))
+        loop.run_until_complete(processor.start())
+        print(processor.filelogger.get_log_str())
     except KeyboardInterrupt:
         processor.stop()
         print("multiprocess: cleaning up started processes...", file=sys.stderr)

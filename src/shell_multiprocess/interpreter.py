@@ -22,7 +22,7 @@ def get_args() -> Args:
 
 def _read_cmds(filepath: Path):
     with filepath.open("r") as f:
-        cmds = f.readlines()
+        cmds = [line.strip() for line in f.readlines()]
     return cmds
 
 

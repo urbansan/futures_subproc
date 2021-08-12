@@ -1,14 +1,17 @@
 import asyncio
 from collections import deque
 from typing import List, Set
+from .async_file_logger import AsyncFileLogger
+import functools
 
 
 class AsyncProcessor:
-    def __init__(self, process_count):
+    def __init__(self, process_count, cmds, disable_logging=True):
         self._process_count = process_count
         self.process_pool: List[asyncio.subprocess.Process] = []
         self.pending: Set[asyncio.Task] = set()
         self.stopped = False
+        self.filelogger = AsyncFileLogger(cmds, disable_logging=disable_logging)
 
     @property
     def process_count(self):
@@ -25,10 +28,11 @@ class AsyncProcessor:
             return 2
         return 0
 
-    async def start(self, cmds: list):
-        pending = await self._get_pending_tasks(cmds[: self.process_count])
+    async def start(self):
+        indexed_cmds = self.filelogger.indexed_cmds.copy()
+        pending = await self._get_pending_tasks(indexed_cmds[: self.process_count])
         self.pending.update(pending)
-        remaining_cmds = deque(cmds[self.process_count :])
+        remaining_cmds = deque(indexed_cmds[self.process_count:])
 
         while remaining_cmds and not self.stopped:
             finished, self.pending = await asyncio.wait(
@@ -58,17 +62,20 @@ class AsyncProcessor:
                 poped_cmds.append(cmd)
         return poped_cmds
 
-    async def _get_pending_tasks(self, cmds):
-        process_obj_futures = {self._get_subprocess_future(cmd) for cmd in cmds}
-        finished, _ = await asyncio.wait(process_obj_futures)
-        pending = {f.result() for f in finished}
-        return pending
+    async def _get_pending_tasks(self, indexed_cmds):
+        coros = {self._get_command_coro(idx, cmd) for idx, cmd in indexed_cmds}
+        tasks = {asyncio.ensure_future(coro) for coro in coros}
+        return tasks
 
-    async def _get_subprocess_future(self, cmd):
+    async def _get_command_coro(self, index, cmd):
         process_obj = await asyncio.subprocess.create_subprocess_shell(cmd)
         self.process_pool.append(process_obj)
-        task = asyncio.ensure_future(process_obj.wait())
-        return task
+        await self.filelogger.start(index)
+        await process_obj.wait()
+        if process_obj.returncode == 0:
+            await self.filelogger.finish(index)
+        else:
+            await  self.filelogger.error(index)
 
 
 #
