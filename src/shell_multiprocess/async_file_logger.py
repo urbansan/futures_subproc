@@ -82,7 +82,6 @@ class AsyncFileLogger:
 
     def get_log_str(self):
         out = self._get_header() + "".join(self._get_formatted_loglines())
-        print(out)
         return out
 
     def _get_header(self):

@@ -2,16 +2,15 @@ import asyncio
 from collections import deque
 from typing import List, Set
 from .async_file_logger import AsyncFileLogger
-import functools
 
 
 class AsyncProcessor:
-    def __init__(self, process_count, cmds, disable_logging=True):
+    def __init__(self, process_count: int, cmds: List[str], log_to_file: bool = False):
         self._process_count = process_count
         self.process_pool: List[asyncio.subprocess.Process] = []
         self.pending: Set[asyncio.Task] = set()
         self.stopped = False
-        self.filelogger = AsyncFileLogger(cmds, disable_logging=disable_logging)
+        self.filelogger = AsyncFileLogger(cmds, disable_logging=not log_to_file)
 
     @property
     def process_count(self):
@@ -32,7 +31,7 @@ class AsyncProcessor:
         indexed_cmds = self.filelogger.indexed_cmds.copy()
         pending = await self._get_pending_tasks(indexed_cmds[: self.process_count])
         self.pending.update(pending)
-        remaining_cmds = deque(indexed_cmds[self.process_count:])
+        remaining_cmds = deque(indexed_cmds[self.process_count :])
 
         while remaining_cmds and not self.stopped:
             finished, self.pending = await asyncio.wait(
@@ -75,7 +74,7 @@ class AsyncProcessor:
         if process_obj.returncode == 0:
             await self.filelogger.finish(index)
         else:
-            await  self.filelogger.error(index)
+            await self.filelogger.error(index)
 
 
 #

@@ -1,6 +1,5 @@
-from . import parser
+from shell_multiprocess.cmdline_args import parser
 from pathlib import Path
-import signal
 from typing import List
 from dataclasses import dataclass
 import signal
@@ -11,13 +10,14 @@ class Args:
     shell_commands: List[str]
     process_count: int
     kill_signal: signal.Signals
+    log_to_file: bool
 
 
-def get_args() -> Args:
-    args = parser.get_args()
+def get_adjusted_args() -> Args:
+    args = parser.get_parsed_cmdline_args()
     cmds = _read_cmds(args.filename)
     kill_signal = _choose_signal(args.soft_kill)
-    return Args(cmds, args.processes, kill_signal)
+    return Args(cmds, args.processes, kill_signal, args.log_to_file)
 
 
 def _read_cmds(filepath: Path):

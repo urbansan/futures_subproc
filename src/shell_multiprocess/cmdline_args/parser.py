@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 
 
-def get_args(cmdline_args=None):
+def get_parsed_cmdline_args(cmdline_args=None):
     parser = argparse.ArgumentParser()
     _register_arguments(parser)
     return parser.parse_args(cmdline_args)
@@ -24,6 +24,14 @@ def _register_arguments(parser):
         "--soft-kill",
         action="store_true",
         help="Sends SIGINT signal to subprocesses instead of SIGKILL during cleanup after CTRL-C",
+    )
+
+    parser.add_argument(
+        "-l",
+        "--log-to-file",
+        action="store_true",
+        help="Send multiprocess sumup to file with name 'multiprocess_{pid}.log'. "
+             "Log is being update each time and event and can be viewed to monitor progress",
     )
 
 
