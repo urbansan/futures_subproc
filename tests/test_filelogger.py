@@ -8,7 +8,7 @@ async def test_logger_creates_file_and_updates_it(tmpdir):
     cmds = ["true", "false"]
     logger = AsyncFileLogger(cmds, logpath)
     assert not logpath.exists()
-    await logger.start(0)
+    await logger.set_running_and_update(0)
     assert logpath.exists()
 
     with logpath.open("r") as f:

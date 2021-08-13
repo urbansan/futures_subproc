@@ -69,12 +69,12 @@ class AsyncProcessor:
     async def _get_command_coro(self, index, cmd):
         process_obj = await asyncio.subprocess.create_subprocess_shell(cmd)
         self.process_pool.append(process_obj)
-        await self.filelogger.start(index)
+        await self.filelogger.set_running_and_update(index)
         await process_obj.wait()
         if process_obj.returncode == 0:
-            await self.filelogger.finish(index)
+            await self.filelogger.set_done_and_update(index)
         else:
-            await self.filelogger.error(index)
+            await self.filelogger.set_error_and_update(index)
 
 
 #

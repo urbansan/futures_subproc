@@ -67,19 +67,19 @@ class AsyncFileLogger:
             if logline.status is Status.Waiting:
                 logline.status = Status.NeverRan
 
-    async def start(self, index):
+    async def set_running_and_update(self, index):
         log_line = self._loglines[index]
         log_line.set_start()
         log_line.status = Status.Running
         await self.update_logfile()
 
-    async def finish(self, index):
+    async def set_done_and_update(self, index):
         log_line = self._loglines[index]
         log_line.set_end()
         log_line.status = Status.Done
         await self.update_logfile()
 
-    async def error(self, index):
+    async def set_error_and_update(self, index):
         log_line = self._loglines[index]
         log_line.set_end()
         log_line.status = Status.Error
@@ -133,7 +133,7 @@ class AsyncFileLogger:
 if __name__ == "__main__":
     logger = AsyncFileLogger(["true", "false"], disable_logging=True)
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(logger.start(0))
+    loop.run_until_complete(logger.set_running_and_update(0))
     print(logger.get_log_str())
 
     # logger.finish(0)
