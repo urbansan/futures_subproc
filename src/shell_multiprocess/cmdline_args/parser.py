@@ -3,12 +3,14 @@ from pathlib import Path
 
 
 def get_parsed_cmdline_args(cmdline_args=None):
-    parser = argparse.ArgumentParser()
+    desc = "Script which reads a file with shell commands and runs them in parallel processes."
+    parser = argparse.ArgumentParser(description=desc)
     _register_arguments(parser)
     return parser.parse_args(cmdline_args)
 
 
 def _register_arguments(parser):
+
     parser.add_argument(
         "filename",
         type=_existing_filepath,
@@ -31,7 +33,7 @@ def _register_arguments(parser):
         "--log-to-file",
         action="store_true",
         help="Send multiprocess sumup to file with name 'multiprocess_{pid}.log'. "
-             "Log is being update each time and event and can be viewed to monitor progress",
+        "Log is being update each time an event occurs and can be viewed to monitor progress.",
     )
 
 
