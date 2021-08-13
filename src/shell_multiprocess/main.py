@@ -26,5 +26,6 @@ def main():
     finally:
         if not args.log_to_file:
             print(processor.filelogger.get_log_str())
+
         loop.close()
         exit(processor.returncode)

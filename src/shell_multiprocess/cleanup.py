@@ -45,10 +45,15 @@ class CleanupAsyncProcessor:
         self.kill_signal = kill_signal
 
     async def start(self):
-        # print("starting cleanup", file=sys.stderr)
         self._cancel_pending()
         await self._cleanup_commands()
         await self._cleanup_shells()
+        await self._cleanup_logger()
+
+    async def _cleanup_logger(self):
+        self.processor.filelogger.set_running_to_interrupted()
+        self.processor.filelogger.set_waiting_to_never_ran()
+        await self.processor.filelogger.update_logfile()
 
     def _get_executor(self):
         return concurrent.futures.ThreadPoolExecutor(

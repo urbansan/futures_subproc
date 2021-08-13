@@ -16,6 +16,8 @@ class Status(Enum):
     Error = "error"
     Done = "done"
     Running = "running"
+    Interrupted = "interrupted"
+    NeverRan = "never-ran"
 
 
 @dataclass
@@ -39,7 +41,7 @@ class LogLine:
 
 class AsyncFileLogger:
     _template = (
-        "{status:8.8} | {start:^19.19} | {end:^19.19} | {elapsed:^19.19} | {cmd}\n"
+        "{status:11.11} | {start:^19.19} | {end:^19.19} | {elapsed:^19.19} | {cmd}\n"
     )
 
     def __init__(
@@ -54,6 +56,16 @@ class AsyncFileLogger:
         if os.path.exists(self._filename):
             print(f"File already exists: '{filename}'", file=sys.stderr)
         self.disabled = disable_logging
+
+    def set_running_to_interrupted(self):
+        for logline in self._loglines:
+            if logline.status is Status.Running:
+                logline.status = Status.Interrupted
+
+    def set_waiting_to_never_ran(self):
+        for logline in self._loglines:
+            if logline.status is Status.Waiting:
+                logline.status = Status.NeverRan
 
     async def start(self, index):
         log_line = self._loglines[index]
@@ -78,7 +90,6 @@ class AsyncFileLogger:
             return
         async with aiofiles.open(self._filename, "w") as f:
             await f.write(self.get_log_str())
-
 
     def get_log_str(self):
         out = self._get_header() + "".join(self._get_formatted_loglines())
